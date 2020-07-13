@@ -60,10 +60,8 @@ if ( !defined( 'EDITWARNING_UNITTEST' ) ) {
 }
 
 // Assign hooks to functions
-$wgHooks['AlternateEdit'][]             = array( 'fnEditWarning_edit', $editwarning );   // On article edit.
-$wgHooks['ArticleSave'][]               = array( 'fnEditWarning_remove', $editwarning ); // On article save.
+$wgHooks['BeforePageDisplay'][] = array( 'fnEditWarning_edit', $editwarning );
 $wgHooks['UserLogout'][]                = array( 'fnEditWarning_logout', $editwarning ); // On user logout.
-$wgHooks['ArticleViewHeader'][]         = array( 'fnEditWarning_abort', $editwarning ); // On editing abort.
 
 /**
  * Gets the section id from GET or POST
@@ -77,8 +75,10 @@ function fnEditWarning_getSection() {
 
     if ( isset( $_GET['section'] ) && !isset( $_POST['wpSection'] ) ) {
         return intval( $_GET['section'] );
-    } else {
+    } else if ( isset( $_POST['wpSection'] ) ) {
         return intval( $_POST['wpSection'] );
+    } else {
+       return 0;
     }
 }
 
@@ -91,10 +91,11 @@ function fnEditWarning_init() {
     global $wgRequest, $wgOut, $wgScriptPath, $wgUser, $EditWarning_OnlyEditor;
 
     // Add CSS styles to header
-    if ( ( $wgRequest->getVal('action') == 'edit' || $wgRequest->getVal('action') == 'submit' )
+    if ( ( $wgRequest->getVal('action') == 'edit' || $wgRequest->getVal('action') == 'formedit' || $wgRequest->getVal('action') == 'submit' )
             && $EditWarning_OnlyEditor != "false"
             && $wgUser->getID() >= 1 ) {
         $wgOut->addHeadItem('edit_css', '  <link href="' . $wgScriptPath . '/extensions/EditWarning/article_edit.css" rel="stylesheet" type="text/css" />');
+
     }
     $wgOut->addHeadItem('EditWarning', '  <link href="' . $wgScriptPath . '/extensions/EditWarning/style.css" rel="stylesheet" type="text/css" />');
 
@@ -147,7 +148,7 @@ function showWarningMsg($msgtype, $lockobj, $cancel_url) {
     
     // Calculate time to wait
     $difference = floatval(abs(time() - $lockobj->getTimestamp()));
-    $time_to_wait = bcdiv($difference, 60, 0);
+    $time_to_wait = round($difference / 60, 0);
 
     // Parameters for message string
     if ($msgtype == TYPE_ARTICLE || $msgtype == TYPE_SECTION) {
@@ -179,228 +180,222 @@ function showWarningMsg($msgtype, $lockobj, $cancel_url) {
  * @return boolean|int It returns a constant int if it runs in unit test
  *                     environment, else true.
  */
-function fnEditWarning_edit($ew, $editpage) {
-    global $wgUser, $wgScriptPath, $wgScriptExtension, $PHP_SELF;
+function fnEditWarning_edit($ew, OutputPage $out, Skin $skin) {
+    global $wgScriptPath, $wgScriptExtension, $PHP_SELF;
     $dbr = null;
     $dbw = null;
 
-    // Abort on nonexisting pages
-    if ( $editpage->mArticle->getID() < 1 ) {
-        return true;
-    }
+	$user = $out->getUser();
 
-    if (! defined( 'EDITWARNING_UNITTEST' ) ) {
-        $dbr        =& wfGetDB( DB_SLAVE );
-        $dbw        =& wfGetDB( DB_MASTER );
-    }
+    if($_REQUEST['action'] == 'edit' || $_REQUEST['action'] == 'formedit' || $_REQUEST['veaction'] == 'edit') {
 
-    $ew->setUserID( $wgUser->getID() );
-    $ew->setUserName($wgUser->getName());
-    $ew->setArticleID( $editpage->mArticle->getID() );
-    $section    = fnEditWarning_getSection();
-    $msg_params = array();
+		// Abort on nonexisting pages
+		if ( $out->getTitle()->getArticleID() < 1 ) {
+			return true;
+		}
 
-    // Get article title for cancel button
-    if ($editpage->mArticle->mTitle->getNamespace() == 'NS_MAIN') {
-        $article_title = $editpage->mArticle->mTitle->getPartialURL();
-    } else {
-        $article_title = $editpage->mArticle->mTitle->getNsText() . ":" . $editpage->mArticle->mTitle->getPartialURL();
-    }
+		if ( !defined( 'EDITWARNING_UNITTEST' ) ) {
+			$dbr = wfGetDB( DB_SLAVE );
+			$dbw = wfGetDB( DB_MASTER );
+		}
 
-    $url = $PHP_SELF . "?title=" . $article_title . "&cancel=true";
+		$ew->setUserID( $user->getID() );
+		$ew->setUserName( $user->getName() );
+		$ew->setArticleID( $out->getTitle()->getArticleID() );
+		$section = fnEditWarning_getSection();
+		$msg_params = array();
 
-    // Check request values
-    if ( $section > 0 ) {
-        // Section editing
-        $ew->setSection( $section );
-        $ew->load( $dbr );
+		// Get article title for cancel button
+		if ( $out->getTitle()->getNamespace() == 'NS_MAIN' ) {
+			$article_title = $out->getTitle()->getPartialURL();
+		} else {
+			$article_title = $article_title = $out->getTitle()->getNsText() . ":" . $article_title = $out->getTitle()->getPartialURL();
+		}
 
-        // Is the whole article locked?
-        if ($ew->isArticleLocked()) {
-            // Is it by the user?
-            if ($ew->isArticleLockedByUser()) {
-                // The user has already a lock on the whole article, but
-                // edits now a single section. Change article lock to
-                // section lock.
-                if (defined('EDITWARNING_UNITTEST')) {
-                    return EDIT_SECTION_NEW;
-                }
+		$url = $PHP_SELF . "?title=" . $article_title . "&cancel=true";
 
-                $ew->removeLock($dbw);
-                $ew->saveLock($dbw, $section);
-                showInfoMsg(TYPE_SECTION, $ew->getTimestamp(TIMESTAMP_NEW), $url);
-                unset($ew);
-                return true;
-            } else {
-                // Someone else has a lock on the whole article. Show warning.
-                if (defined('EDITWARNING_UNITTEST')) {
-                    return EDIT_ARTICLE_OTHER;
-                }
+		// Check request values
+		if ( $section > 0 ) {
+			// Section editing
+			$ew->setSection( $section );
+			$ew->load( $dbr );
 
-                showWarningMsg(TYPE_ARTICLE, $ew->getArticleLock(), $url);
-                unset($ew);
-                return true;
-            }
-        } elseif ($ew->isSectionLocked($section)) {
-            $sectionLock = $ew->getSectionLock($section);
-            
-            // Is the section locked by the user?
-            if ($ew->isSectionLockedByUser($sectionLock)) {
-                // The section is locked by the user. Update lock.
-                if (defined('EDITWARNING_UNITTEST')) {
-                    return EDIT_SECTION_USER;
-                }
-                
-                $ew->updateLock($dbw, $section);
-                showInfoMsg(TYPE_SECTION, $ew->getTimestamp(TIMESTAMP_NEW), $url);
-                unset($ew);
-                return true;
-            } else {
-                // The section is locked by someone else. Show warning.
-                if (defined('EDITWARNING_UNITTEST')) {
-                    return EDIT_SECTION_OTHER;
-                }
-                
-                showWarningMsg(TYPE_SECTION, $sectionLock, $url);
-                unset($ew);
-                return true;
-            }
-        } else {
-            // No locks. Create section lock for user.
-            if (defined('EDITWARNING_UNITTEST')) {
-                return EDIT_SECTION_NEW;
-            }
+			// Is the whole article locked?
+			if ( $ew->isArticleLocked() ) {
+				// Is it by the user?
+				if ( $ew->isArticleLockedByUser() ) {
+					// The user has already a lock on the whole article, but
+					// edits now a single section. Change article lock to
+					// section lock.
+					if ( defined( 'EDITWARNING_UNITTEST' ) ) {
+						return EDIT_SECTION_NEW;
+					}
 
-            // Don't save locks for anonymous users.
-            if ($ew->getUserID() < 1) {
-                return true;
-            }
-            
-            $ew->saveLock($dbw, $section);
-            showInfoMsg(TYPE_SECTION, $ew->getTimestamp(TIMESTAMP_NEW), $url);
-            unset($ew);
-            return true;
-        }
-    } else {
-        // Article editing
-        $ew->load($dbr);
-        
-        // Is the article locked?
-        if ($ew->isArticleLocked()) {
-            if ($ew->isArticleLockedByUser()) {
-                // The article is locked by the user. Update lock.
-                if (defined('EDITWARNING_UNITTEST')) {
-                    return EDIT_ARTICLE_USER;
-                }
+					$ew->removeLock( $dbw );
+					$ew->saveLock( $dbw, $section );
+					showInfoMsg( TYPE_SECTION, $ew->getTimestamp( TIMESTAMP_NEW ), $url );
+					unset( $ew );
 
-                $ew->updateLock($dbw);
-                showInfoMsg(TYPE_ARTICLE, $ew->getTimestamp(TIMESTAMP_NEW), $url);
-                unset($ew);
-                return true;
-            } else {
-                // The article is locked by someone else. Show warning.
-                if (defined('EDITWARNING_UNITTEST')) {
-                    return EDIT_ARTICLE_OTHER;
-                }
+					return true;
+				} else {
+					// Someone else has a lock on the whole article. Show warning.
+					if ( defined( 'EDITWARNING_UNITTEST' ) ) {
+						return EDIT_ARTICLE_OTHER;
+					}
 
-                $article_lock = $ew->getArticleLock();
-                showWarningMsg(TYPE_ARTICLE, $article_lock, $url);
-                unset($ew);
-                return true;
-            }
-        } elseif ($ew->anySectionLocks()) {
-            // There is at least one section lock
-            if ($ew->anySectionLocksByOthers()) {
-                // At least one section lock by another user.
-                // So an article lock is not possible. Show warning.
-                if (defined('EDITWARNING_UNITTEST')) {
-                    return EDIT_SECTION_OTHER;
-                }
+					showWarningMsg( TYPE_ARTICLE, $ew->getArticleLock(), $url );
+					unset( $ew );
 
-                $sectionLocks = $ew->getSectionLocksByOther();
-                // Get the newest lock of a section for the warning message.
-                $lock = $sectionLocks[$ew->getSectionLocksByOtherCount() - 1];
-                showWarningMsg(TYPE_ARTICLE_SECTIONCONFLICT, $lock, $url);
-                unset($ew);
-                return true;
-            } else {
-                // The user has exclusively one or more locks on sections
-                // of the article, but now wants to edit the whole article.
-                // Change sections locks to article lock.
-                if (defined('EDITWARNING_UNITTEST')) {
-                    return EDIT_ARTICLE_NEW;
-                }
+					return true;
+				}
+			} elseif ( $ew->isSectionLocked( $section ) ) {
+				$sectionLock = $ew->getSectionLock( $section );
 
-                $ew->removeUserLocks($dbw);
-                $ew->saveLock($dbw);
-                showInfoMsg(TYPE_ARTICLE, $ew->getTimestamp(TIMESTAMP_NEW), $url);
-                unset($ew);
-                return true;
-            }
-        } else {
-            // No locks. Create new article lock.
-            if (defined('EDITWARNING_UNITTEST')) {
-                return EDIT_ARTICLE_NEW;
-            }
+				// Is the section locked by the user?
+				if ( $ew->isSectionLockedByUser( $sectionLock ) ) {
+					// The section is locked by the user. Update lock.
+					if ( defined( 'EDITWARNING_UNITTEST' ) ) {
+						return EDIT_SECTION_USER;
+					}
 
-            // Don't save locks for anonymous users.
-            if ($ew->getUserID() < 1) {
-                return true;
-            }
+					$ew->updateLock( $dbw, $section );
+					showInfoMsg( TYPE_SECTION, $ew->getTimestamp( TIMESTAMP_NEW ), $url );
+					unset( $ew );
 
-            $ew->saveLock($dbw);
-            showInfoMsg(TYPE_ARTICLE, $ew->getTimestamp(TIMESTAMP_NEW), $url);
-            unset($ew);
-            return true;
-        }
-    }
+					return true;
+				} else {
+					// The section is locked by someone else. Show warning.
+					if ( defined( 'EDITWARNING_UNITTEST' ) ) {
+						return EDIT_SECTION_OTHER;
+					}
+
+					showWarningMsg( TYPE_SECTION, $sectionLock, $url );
+					unset( $ew );
+
+					return true;
+				}
+			} else {
+				// No locks. Create section lock for user.
+				if ( defined( 'EDITWARNING_UNITTEST' ) ) {
+					return EDIT_SECTION_NEW;
+				}
+
+				// Don't save locks for anonymous users.
+				if ( $ew->getUserID() < 1 ) {
+					return true;
+				}
+
+				$ew->saveLock( $dbw, $section );
+				showInfoMsg( TYPE_SECTION, $ew->getTimestamp( TIMESTAMP_NEW ), $url );
+				unset( $ew );
+
+				return true;
+			}
+		} else {
+			// Article editing
+			$ew->load( $dbr );
+
+			// Is the article locked?
+			if ( $ew->isArticleLocked() ) {
+				if ( $ew->isArticleLockedByUser() ) {
+					// The article is locked by the user. Update lock.
+					if ( defined( 'EDITWARNING_UNITTEST' ) ) {
+						return EDIT_ARTICLE_USER;
+					}
+
+					$ew->updateLock( $dbw );
+					showInfoMsg( TYPE_ARTICLE, $ew->getTimestamp( TIMESTAMP_NEW ), $url );
+					unset( $ew );
+
+					return true;
+				} else {
+					// The article is locked by someone else. Show warning.
+					if ( defined( 'EDITWARNING_UNITTEST' ) ) {
+						return EDIT_ARTICLE_OTHER;
+					}
+
+					$article_lock = $ew->getArticleLock();
+					showWarningMsg( TYPE_ARTICLE, $article_lock, $url );
+					unset( $ew );
+
+					return true;
+				}
+			} elseif ( $ew->anySectionLocks() ) {
+				// There is at least one section lock
+				if ( $ew->anySectionLocksByOthers() ) {
+					// At least one section lock by another user.
+					// So an article lock is not possible. Show warning.
+					if ( defined( 'EDITWARNING_UNITTEST' ) ) {
+						return EDIT_SECTION_OTHER;
+					}
+
+					$sectionLocks = $ew->getSectionLocksByOther();
+					// Get the newest lock of a section for the warning message.
+					$lock = $sectionLocks[$ew->getSectionLocksByOtherCount() - 1];
+					showWarningMsg( TYPE_ARTICLE_SECTIONCONFLICT, $lock, $url );
+					unset( $ew );
+
+					return true;
+				} else {
+					// The user has exclusively one or more locks on sections
+					// of the article, but now wants to edit the whole article.
+					// Change sections locks to article lock.
+					if ( defined( 'EDITWARNING_UNITTEST' ) ) {
+						return EDIT_ARTICLE_NEW;
+					}
+
+					$ew->removeUserLocks( $dbw );
+					$ew->saveLock( $dbw );
+					showInfoMsg( TYPE_ARTICLE, $ew->getTimestamp( TIMESTAMP_NEW ), $url );
+					unset( $ew );
+
+					return true;
+				}
+			} else {
+				// No locks. Create new article lock.
+				if ( defined( 'EDITWARNING_UNITTEST' ) ) {
+					return EDIT_ARTICLE_NEW;
+				}
+
+				// Don't save locks for anonymous users.
+				if ( $ew->getUserID() < 1 ) {
+					return true;
+				}
+
+				$ew->saveLock( $dbw );
+				showInfoMsg( TYPE_ARTICLE, $ew->getTimestamp( TIMESTAMP_NEW ), $url );
+				unset( $ew );
+			}
+		}
+	} else {
+		// Action if saved or aborted.
+		// !!! This actions is called on each page load except edit actions
+		fnEditWarning_remove($ew, $out->getWikiPage(), $user);
+	}
+
+	return true;
 }
 
 
 /**
- * Action if article is saved.
+ * Action if article is saved / canceled.
  *
  * @hook ArticleSave
  * @param
  * @return boolean Returns always true.
  */
-function fnEditWarning_remove( $ew, $article, $user, $text, $summary, $minor, $watch, $sectionanchor, $flags ) {
-    global $wgUser;
 
+function fnEditWarning_remove( $ew, $wikiPage, $user) {
     // Abort on nonexisting pages or anonymous users.
-    if ( $article->getID() < 1 || $user->getID() < 1 ) {
+
+    if ( $wikiPage->getTitle()->getArticleID() < 1 || $user->getID() < 1 ) {
         return true;
     }
 
-    $dbw =& wfGetDB(DB_MASTER);
-    $ew->setUserID($wgUser->getID());
-    $ew->setArticleID($article->getID());
+    $dbw = wfGetDB(DB_MASTER);
+    $ew->setUserID($user->getID());
+    $ew->setArticleID($wikiPage->getTitle()->getArticleID());
     $ew->removeLock($dbw);
-
-    return true;
-}
-
-/**
- * Action if editing is aborted.
- *
- * @hook ArticleViewHeader
- * @param
- * @return boolean Returns always true.
- */
-function fnEditWarning_abort( $ew, $article, $outputDone, $pcache ) {
-    global $wgRequest, $wgUser;
-
-    if( $wgRequest->getVal('cancel' ) == "true") {
-        $dbw =& wfGetDB(DB_MASTER);
-        $ew->setUserID($wgUser->getID());
-        $ew->setArticleID($article->getID());
-        $ew->removeLock($dbw);
-
-        $msg = EditWarningMsg::getInstance( "Cancel" );
-        $msg->show();
-        unset( $ew );
-        unset( $msg );
-    }
 
     return true;
 }
@@ -414,7 +409,7 @@ function fnEditWarning_abort( $ew, $article, $outputDone, $pcache ) {
  *
  */
 function fnEditWarning_logout($ew, $user) {
-    $dbw =& wfGetDB( DB_MASTER );
+    $dbw = wfGetDB( DB_MASTER );
     $ew->setUserID( $user->getID() );
     $ew->removeUserLocks( $dbw );
 

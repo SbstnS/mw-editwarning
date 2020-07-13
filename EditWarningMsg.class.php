@@ -53,7 +53,7 @@ class EditWarningMsg implements EditWarningMsgFactory {
 
         $path = $IP . "/extensions/EditWarning/templates";
 
-        if ( $self->instance[$type] === null ) {
+        if ( !isset(self::$instance[$type]) ) {
             switch ( $type ) {
                 case "ArticleNotice":
                     $params[] = wfMessage( 'ew-leave' )->text();
