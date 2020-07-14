@@ -27,7 +27,7 @@
  * @category    Extensions
  * @package     EditWarning
  */
-
+use SMW\MediaWiki\PermissionManager;
 /**
  * Error classes for EditWarningMessage
  */
@@ -106,11 +106,22 @@ abstract class EditWarningMessage {
      *
      * @access public
      */
-    public function show() {
+    public function show($type) {
         global $wgOut;
+
+        if($type === "ArticleWarning" || $type === "ArticleSectionWarning" || $type === "SectionWarning"){
+			$wgOut->addModules(['ext.editwarning.overlay']);
+		}
+
+        //$wgOut->addModules(['ext.editwarning.overlay']);
 
         $content = $this->processTemplate();
         $wgOut->prependHTML( $content );
+
+		//$anon = new User();
+		//$accErrors = $wgOut->getTitle()->getUserPermissionsErrors( 'read', $anon, true );
+
+        //$wgOut->showPermissionsErrorPage('123', null);
     }
 }
 

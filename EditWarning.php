@@ -29,39 +29,108 @@
  */
 
 if ( !defined( 'MEDIAWIKI' ) && !defined( 'EDITWARNING_UNITTEST' ) ) {
-    echo <<<EOT
+	echo <<<EOT
 <p>To install this extension, put the following line in LocalSettings.php:\n
 <pre>require_once "\$IP/extensions/EditWarning/EditWarning.php";</pre></p>\n\n
 
 <p>See <a href="http://www.mediawiki.org/wiki/Extension:EditWarning/0.4">http://www.mediawiki.org/wiki/Extension:EditWarning/0.4</a> for more information.</p>
 EOT;
-    exit(1);
+	exit( 1 );
 }
 
-$extension_dir = dirname(__FILE__) . "/";
+$extension_dir = dirname( __FILE__ ) . "/";
 
 $wgExtensionCredits['other'][] = array(
-    'name'           => "EditWarning",
-    'author'         => "Thomas David",
-    'url'            => "http://www.mediawiki.org/wiki/Extension:EditWarning/0.4",
-    'version'        => "0.4-rc",
-    'descriptionmsg' => "editwarning-desc"
+	'name' => "EditWarning",
+	'author' => "Thomas David",
+	'url' => "http://www.mediawiki.org/wiki/Extension:EditWarning/0.4",
+	'version' => "0.4-rc",
+	'descriptionmsg' => "editwarning-desc",
 );
 
-$wgAutoloadClasses['EditWarning']        = $extension_dir . 'EditWarning.class.php';
-$wgAutoloadClasses['EditWarningMsg']     = $extension_dir . 'EditWarningMsg.class.php';
+$wgAutoloadClasses['EditWarning'] = $extension_dir . 'EditWarning.class.php';
+$wgAutoloadClasses['EditWarningMsg'] = $extension_dir . 'EditWarningMsg.class.php';
 $wgExtensionMessagesFiles['EditWarning'] = $extension_dir . 'Messages.i18n.php';
-$wgExtensionFunctions[]                  = 'fnEditWarning_init';
+$wgExtensionFunctions[] = 'fnEditWarning_init';
+
+$editWarningModule = [
+	'localBasePath' => __DIR__,
+	'remoteExtPath' => 'EditWarning'
+];
+
+$wgResourceModules['ext.editwarning.overlay'] = $editWarningModule + [
+		'position'     => 'top',
+		'scripts'      => [
+			'overlay.js'
+		],
+		'targets'      => [
+			'mobile',
+			'desktop'
+		]
+	];
 
 $editwarning = null;
 
 if ( !defined( 'EDITWARNING_UNITTEST' ) ) {
-    $editwarning = new EditWarning();
+	$editwarning = new EditWarning();
 }
 
 // Assign hooks to functions
 $wgHooks['BeforePageDisplay'][] = array( 'fnEditWarning_edit', $editwarning );
-$wgHooks['UserLogout'][]                = array( 'fnEditWarning_logout', $editwarning ); // On user logout.
+$wgHooks['UserLogout'][] = array( 'fnEditWarning_logout', $editwarning ); // On user logout.
+//$wgHooks['userCan'][]     = array( 'onUserCan', $editwarning);
+
+
+function onUserCan( $ew, &$title, &$user, $action, &$result ) {
+	global $wgOut;
+	if ( $_REQUEST['action'] == 'edit' || $_REQUEST['action'] == 'formedit' || $_REQUEST['veaction'] == 'edit' ) {
+
+		if ( !defined( 'EDITWARNING_UNITTEST' ) ) {
+			$dbr = wfGetDB( DB_SLAVE );
+			$dbw = wfGetDB( DB_MASTER );
+		}
+
+		$ew->setUserID( $user->getID() );
+		$ew->setUserName( $user->getName() );
+		$ew->setArticleID( $wgOut->getTitle()->getArticleID() );
+
+		$section = fnEditWarning_getSection();
+		$ew->load( $dbr );
+
+		// Check request values
+		if ( $section > 0 ) {
+			// Section editing
+			$ew->setSection( $section );
+			$ew->load( $dbr );
+
+			// Is the whole article locked?
+			if ( $ew->isArticleLocked() ) {
+				// Is it by the user?
+				if ( $ew->isArticleLockedByUser() ) {
+					$user = $user;
+
+					return true;
+				} else {
+				}
+			}
+
+		} else {
+
+			// Article editing
+			$ew->load( $dbr );
+
+			// Is the whole article locked?
+			if ( $ew->isArticleLocked() ) {
+				// Page is edited by a differnent the user then return false
+				if ( !$ew->isArticleLockedByUser() ) {
+					return false;
+				}
+			}
+		}
+	}
+
+	return true;
+}
 
 /**
  * Gets the section id from GET or POST
@@ -69,17 +138,19 @@ $wgHooks['UserLogout'][]                = array( 'fnEditWarning_logout', $editwa
  * @return int Section id.
  */
 function fnEditWarning_getSection() {
-    if ( defined( 'EDITWARNING_UNITTEST' ) ) {
-        return $GLOBALS['unitGetSection'];
-    }
+	if ( defined( 'EDITWARNING_UNITTEST' ) ) {
+		return $GLOBALS['unitGetSection'];
+	}
 
-    if ( isset( $_GET['section'] ) && !isset( $_POST['wpSection'] ) ) {
-        return intval( $_GET['section'] );
-    } else if ( isset( $_POST['wpSection'] ) ) {
-        return intval( $_POST['wpSection'] );
-    } else {
-       return 0;
-    }
+	if ( isset( $_GET['section'] ) && !isset( $_POST['wpSection'] ) ) {
+		return intval( $_GET['section'] );
+	} else {
+		if ( isset( $_POST['wpSection'] ) ) {
+			return intval( $_POST['wpSection'] );
+		} else {
+			return 0;
+		}
+	}
 }
 
 /**
@@ -88,27 +159,25 @@ function fnEditWarning_getSection() {
  * @return boolean Returns always true.
  */
 function fnEditWarning_init() {
-    global $wgRequest, $wgOut, $wgScriptPath, $wgUser, $EditWarning_OnlyEditor;
+	global $wgRequest, $wgOut, $wgScriptPath, $wgUser, $EditWarning_OnlyEditor;
 
-    // Add CSS styles to header
-    if ( ( $wgRequest->getVal('action') == 'edit' || $wgRequest->getVal('action') == 'formedit' || $wgRequest->getVal('action') == 'submit' )
-            && $EditWarning_OnlyEditor != "false"
-            && $wgUser->getID() >= 1 ) {
-        $wgOut->addHeadItem('edit_css', '  <link href="' . $wgScriptPath . '/extensions/EditWarning/article_edit.css" rel="stylesheet" type="text/css" />');
+	// Add CSS styles to header
+	if ( ( $wgRequest->getVal( 'action' ) == 'edit' || $wgRequest->getVal( 'action' ) == 'formedit' || $wgRequest->getVal( 'action' ) == 'submit' ) && $EditWarning_OnlyEditor != "false" && $wgUser->getID() >= 1 ) {
+		$wgOut->addHeadItem( 'edit_css', '  <link href="' . $wgScriptPath . '/extensions/EditWarning/article_edit.css" rel="stylesheet" type="text/css" />' );
 
-    }
-    $wgOut->addHeadItem('EditWarning', '  <link href="' . $wgScriptPath . '/extensions/EditWarning/style.css" rel="stylesheet" type="text/css" />');
+	}
+	$wgOut->addHeadItem( 'EditWarning', '  <link href="' . $wgScriptPath . '/extensions/EditWarning/style.css" rel="stylesheet" type="text/css" />' );
 
-    return true;
+	return true;
 }
 
 /*
  * Functions and definitions for fnEditWarning_edit
  */
 // Used for messages to indicate edit type.
-define('TYPE_ARTICLE', 1);
-define('TYPE_ARTICLE_SECTIONCONFLICT', 2);
-define('TYPE_SECTION', 3);
+define( 'TYPE_ARTICLE', 1 );
+define( 'TYPE_ARTICLE_SECTIONCONFLICT', 2 );
+define( 'TYPE_SECTION', 3 );
 
 /**
  * Function to show info message about created or updated locks for sections
@@ -116,15 +185,15 @@ define('TYPE_SECTION', 3);
  *
  * @param int $msgtype Type of edit (article or section).
  */
-function showInfoMsg($msgtype, $timestamp, $cancel_url) {
-    $type = ($msgtype == TYPE_ARTICLE) ? "ArticleNotice" : "SectionNotice";
+function showInfoMsg( $msgtype, $timestamp, $cancel_url ) {
+	$type = ( $msgtype == TYPE_ARTICLE ) ? "ArticleNotice" : "SectionNotice";
 
-    // Show info message with updated timestamp.
-    $msg_params[] = date("Y-m-d", $timestamp);
-    $msg_params[] = date("H:i", $timestamp);
-    $msg = EditWarningMsg::getInstance($type, $cancel_url, $msg_params);
-    $msg->show();
-    unset($msg);
+	// Show info message with updated timestamp.
+	$msg_params[] = date( "Y-m-d", $timestamp );
+	$msg_params[] = date( "H:i", $timestamp );
+	$msg = EditWarningMsg::getInstance( $type, $cancel_url, $msg_params );
+	$msg->show( $msgtype );
+	unset( $msg );
 }
 
 /**
@@ -133,42 +202,42 @@ function showInfoMsg($msgtype, $timestamp, $cancel_url) {
  *
  * @param <type> $lockobj EditWarningLock object.
  */
-function showWarningMsg($msgtype, $lockobj, $cancel_url) {
-    switch ($msgtype) {
-        case TYPE_ARTICLE:
-            $type = "ArticleWarning";
-            break;
-        case TYPE_ARTICLE_SECTIONCONFLICT:
-            $type = "ArticleSectionWarning";
-            break;
-        case TYPE_SECTION:
-            $type = "SectionWarning";
-            break;
-    }
-    
-    // Calculate time to wait
-    $difference = floatval(abs(time() - $lockobj->getTimestamp()));
-    $time_to_wait = round($difference / 60, 0);
+function showWarningMsg( $msgtype, $lockobj, $cancel_url ) {
+	switch ( $msgtype ) {
+		case TYPE_ARTICLE:
+			$type = "ArticleWarning";
+			break;
+		case TYPE_ARTICLE_SECTIONCONFLICT:
+			$type = "ArticleSectionWarning";
+			break;
+		case TYPE_SECTION:
+			$type = "SectionWarning";
+			break;
+	}
 
-    // Parameters for message string
-    if ($msgtype == TYPE_ARTICLE || $msgtype == TYPE_SECTION) {
-        $msg_params[] = $lockobj->getUserName();
-        $msg_params[] = date("Y-m-d", $lockobj->getTimestamp());
-        $msg_params[] = date("H:i", $lockobj->getTimestamp());
-    }
+	// Calculate time to wait
+	$difference = floatval( abs( time() - $lockobj->getTimestamp() ) );
+	$time_to_wait = round( $difference / 60, 0 );
 
-    $msg_params[] = $time_to_wait;
+	// Parameters for message string
+	if ( $msgtype == TYPE_ARTICLE || $msgtype == TYPE_SECTION ) {
+		$msg_params[] = $lockobj->getUserName();
+		$msg_params[] = date( "Y-m-d", $lockobj->getTimestamp() );
+		$msg_params[] = date( "H:i", $lockobj->getTimestamp() );
+	}
 
-    // Use minutes or seconds string?
-    if ($time_to_wait > 1 || $difference > 60) {
-        $msg_params[] = wfMessage( 'ew-minutes' )->text();
-    } else {
-        $msg_params[] = wfMessage( 'ew-seconds' )->text();
-    }
+	$msg_params[] = $time_to_wait;
 
-    $msg = EditWarningMsg::getInstance($type, $cancel_url, $msg_params);
-    $msg->show();
-    unset($msg);
+	// Use minutes or seconds string?
+	if ( $time_to_wait > 1 || $difference > 60 ) {
+		$msg_params[] = wfMessage( 'ew-minutes' )->text();
+	} else {
+		$msg_params[] = wfMessage( 'ew-seconds' )->text();
+	}
+
+	$msg = EditWarningMsg::getInstance( $type, $cancel_url, $msg_params );
+	$msg->show($type);
+	unset( $msg );
 }
 
 /**
@@ -180,14 +249,15 @@ function showWarningMsg($msgtype, $lockobj, $cancel_url) {
  * @return boolean|int It returns a constant int if it runs in unit test
  *                     environment, else true.
  */
-function fnEditWarning_edit($ew, OutputPage $out, Skin $skin) {
-    global $wgScriptPath, $wgScriptExtension, $PHP_SELF;
-    $dbr = null;
-    $dbw = null;
+
+function fnEditWarning_edit( $ew, OutputPage $out, Skin $skin ) {
+	global $wgScriptPath, $wgScriptExtension, $PHP_SELF;
+	$dbr = null;
+	$dbw = null;
 
 	$user = $out->getUser();
 
-    if($_REQUEST['action'] == 'edit' || $_REQUEST['action'] == 'formedit' || $_REQUEST['veaction'] == 'edit') {
+	if ( $_REQUEST['action'] == 'edit' || $_REQUEST['action'] == 'formedit' || $_REQUEST['veaction'] == 'edit' ) {
 
 		// Abort on nonexisting pages
 		if ( $out->getTitle()->getArticleID() < 1 ) {
@@ -243,6 +313,8 @@ function fnEditWarning_edit($ew, OutputPage $out, Skin $skin) {
 						return EDIT_ARTICLE_OTHER;
 					}
 
+					fnEditWarning_add_overlay();
+
 					showWarningMsg( TYPE_ARTICLE, $ew->getArticleLock(), $url );
 					unset( $ew );
 
@@ -268,6 +340,8 @@ function fnEditWarning_edit($ew, OutputPage $out, Skin $skin) {
 					if ( defined( 'EDITWARNING_UNITTEST' ) ) {
 						return EDIT_SECTION_OTHER;
 					}
+
+					fnEditWarning_add_overlay();
 
 					showWarningMsg( TYPE_SECTION, $sectionLock, $url );
 					unset( $ew );
@@ -314,6 +388,8 @@ function fnEditWarning_edit($ew, OutputPage $out, Skin $skin) {
 						return EDIT_ARTICLE_OTHER;
 					}
 
+					fnEditWarning_add_overlay();
+
 					$article_lock = $ew->getArticleLock();
 					showWarningMsg( TYPE_ARTICLE, $article_lock, $url );
 					unset( $ew );
@@ -328,6 +404,8 @@ function fnEditWarning_edit($ew, OutputPage $out, Skin $skin) {
 					if ( defined( 'EDITWARNING_UNITTEST' ) ) {
 						return EDIT_SECTION_OTHER;
 					}
+
+					fnEditWarning_add_overlay();
 
 					$sectionLocks = $ew->getSectionLocksByOther();
 					// Get the newest lock of a section for the warning message.
@@ -370,12 +448,16 @@ function fnEditWarning_edit($ew, OutputPage $out, Skin $skin) {
 	} else {
 		// Action if saved or aborted.
 		// !!! This actions is called on each page load except edit actions
-		fnEditWarning_remove($ew, $out->getWikiPage(), $user);
+		fnEditWarning_remove( $ew, $out->getWikiPage(), $user );
 	}
 
 	return true;
 }
 
+function fnEditWarning_add_overlay(){
+	global $wgOut;
+	$wgOut->addHTML('<div id="edit-warning-overlay"></div>');
+}
 
 /**
  * Action if article is saved / canceled.
@@ -385,19 +467,19 @@ function fnEditWarning_edit($ew, OutputPage $out, Skin $skin) {
  * @return boolean Returns always true.
  */
 
-function fnEditWarning_remove( $ew, $wikiPage, $user) {
-    // Abort on nonexisting pages or anonymous users.
+function fnEditWarning_remove( $ew, $wikiPage, $user ) {
+	// Abort on nonexisting pages or anonymous users.
 
-    if ( $wikiPage->getTitle()->getArticleID() < 1 || $user->getID() < 1 ) {
-        return true;
-    }
+	if ( $wikiPage->getTitle()->getArticleID() < 1 || $user->getID() < 1 ) {
+		return true;
+	}
 
-    $dbw = wfGetDB(DB_MASTER);
-    $ew->setUserID($user->getID());
-    $ew->setArticleID($wikiPage->getTitle()->getArticleID());
-    $ew->removeLock($dbw);
+	$dbw = wfGetDB( DB_MASTER );
+	$ew->setUserID( $user->getID() );
+	$ew->setArticleID( $wikiPage->getTitle()->getArticleID() );
+	$ew->removeLock( $dbw );
 
-    return true;
+	return true;
 }
 
 /**
@@ -408,10 +490,10 @@ function fnEditWarning_remove( $ew, $wikiPage, $user) {
  * @return boolean Returns always true.
  *
  */
-function fnEditWarning_logout($ew, $user) {
-    $dbw = wfGetDB( DB_MASTER );
-    $ew->setUserID( $user->getID() );
-    $ew->removeUserLocks( $dbw );
+function fnEditWarning_logout( $ew, $user ) {
+	$dbw = wfGetDB( DB_MASTER );
+	$ew->setUserID( $user->getID() );
+	$ew->removeUserLocks( $dbw );
 
-    return true;
+	return true;
 }
