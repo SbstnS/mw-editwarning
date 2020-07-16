@@ -1,0 +1,61 @@
+{
+	"name": "EditWarning",
+	"version": "1.0.0",
+	"author": [
+		"Sebastian Schmid (gesinn.it GmbH & Co. KG)",
+		"Thomas David"
+	],
+	"url": "http://gitlab/mediawiki-extension/EditWarning",
+	"descriptionmsg": "editwarning-desc",
+	"license-name": "GPL-3.0-or-later",
+	"type": "other",
+	"callback": "EditWarning\\EditWarningHooks::init",
+	"AutoloadClasses": {
+		"EditWarning\\EditWarning": "src/EditWarning.php",
+		"EditWarning\\EditWarningCancelMsg": "src/EditWarningCancelMsg.php",
+		"EditWarning\\EditWarningInfoMsg": "src/EditWarningInfoMsg.php",
+		"EditWarning\\EditWarningLock": "src/EditWarningLock.php",
+		"EditWarning\\EditWarningMessage": "src/EditWarningMessage.php",
+		"EditWarning\\EditWarningMsg": "src/EditWarningMsg.php",
+		"EditWarning\\EditWarningMsgFactory": "src/EditWarningMsgFactory.php",
+		"EditWarning\\EditWarningWarnMsg": "src/EditWarningWarnMsg.php",
+		"EditWarning\\EditWarningHooks": "EditWarningHooks.php"
+	},
+	"Hooks": {
+		"BeforePageDisplay": [
+			"EditWarning\\EditWarningHooks::edit"
+		],
+		"UserLogout": [
+			"EditWarning\\EditWarningHooks::logout"
+		]
+	},
+	"MessagesDirs": {
+		"EditWarning": [
+			"i18n"
+		]
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources",
+		"remoteExtPath": "EditWarning"
+	},
+	"ResourceModules": {
+		"ext.editwarning": {
+			"scripts": [
+				"js/editwarning.js"
+			],
+			"styles": [
+				"css/style.css"
+			]
+		},
+		"ext.editwarning.overlay": {
+			"scripts": [
+				"js/overlay.js"
+			]
+		}
+	},
+	"config": {
+		"EditWarning_OnlyEditor": true,
+		"EditWarning_Timeout":  10
+	},
+	"manifest_version": 1
+}

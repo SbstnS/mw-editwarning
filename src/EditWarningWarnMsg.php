@@ -1,5 +1,6 @@
 <?php
-
+namespace EditWarning;
+use EditWarning\EditWarningMessage;
 /**
  * Implementation of EditWarningWarnMsg class.
  *
@@ -27,8 +28,6 @@
  * @category    Extensions
  * @package     EditWarning
  */
-
-require_once( "EditWarningMessage.class.php" );
 
 class EditWarningWarnMsg extends EditWarningMessage {
     public function __construct( $path, $url ) {

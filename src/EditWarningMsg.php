@@ -1,5 +1,9 @@
 <?php
-
+namespace EditWarning;
+use EditWarning\EditWarningMsgFactory;
+use EditWarning\EditWarningInfoMsg;
+use EditWarning\EditWarningWarnMsg;
+use EditWarning\EditWarningCancelMsg;
 /**
  * Implementation of EditWarningMsg class.
  *
@@ -28,12 +32,8 @@
  * @package     EditWarning
  */
 
-require_once( "EditWarningMsgFactory.class.php" );
-require_once( "EditWarningInfoMsg.class.php" );
-require_once( "EditWarningWarnMsg.class.php" );
-require_once( "EditWarningCancelMsg.class.php" );
-
-class IllegalArgumentException extends Exception {}
+//TODO
+//class IllegalArgumentException extends Exception {}
 
 /**
  * Singleton factory for EditWarningMessage subclasses.
@@ -84,7 +84,8 @@ class EditWarningMsg implements EditWarningMsgFactory {
                     self::$instance[$type] = new EditWarningCancelMsg( $path );
                     break;
                 default:
-                    throw new IllegalArgumentException( "Unknown message type." );
+                	//TODO
+                    //throw new IllegalArgumentException( "Unknown message type." );
             }
         }
 

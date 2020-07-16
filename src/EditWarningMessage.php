@@ -1,4 +1,6 @@
 <?php
+namespace EditWarning;
+use SMW\MediaWiki\PermissionManager;
 
 /**
  * Implementation of EditWarningMessage class.
@@ -27,16 +29,18 @@
  * @category    Extensions
  * @package     EditWarning
  */
-use SMW\MediaWiki\PermissionManager;
+
 /**
  * Error classes for EditWarningMessage
  */
-class LoadTemplateException extends Exception {
+
+// TODO
+/*class LoadTemplateException extends Exception {
 
 }
 class NoTemplateContentFoundException extends Exception {
 
-}
+}*/
 
 abstract class EditWarningMessage {
     private $_content;
@@ -71,7 +75,9 @@ abstract class EditWarningMessage {
             $file = fopen( $file_name, "r" );
             $this->setContent( fread( $file, filesize( $file_name ) ) );
         } catch( Exception $e ) {
-            throw new LoadTemplateException( $e );
+
+        	// TODO
+            //throw new LoadTemplateException( $e );
         }
         fclose( $file );
     }
@@ -85,9 +91,10 @@ abstract class EditWarningMessage {
         $content = $this->getContent();
 
         if ( $content == null ) {
-            throw new NoTemplateContentFoundException(
+        	//TODO
+            /*throw new NoTemplateContentFoundException(
                 "No template content found. You should load a template first."
-            );
+            );*/
         }
 
         foreach( $this->getLabels() as $label => $value ) {
@@ -110,19 +117,17 @@ abstract class EditWarningMessage {
         global $wgOut;
 
         if($type === "ArticleWarning" || $type === "ArticleSectionWarning" || $type === "SectionWarning"){
+
+        	// Add HTML for overlay
+			$wgOut->addHTML('<div id="edit-warning-overlay"></div>');
 			$wgOut->addModules(['ext.editwarning.overlay']);
 		}
-
-        //$wgOut->addModules(['ext.editwarning.overlay']);
 
         $content = $this->processTemplate();
         $wgOut->prependHTML( $content );
 
-		//$anon = new User();
-		//$accErrors = $wgOut->getTitle()->getUserPermissionsErrors( 'read', $anon, true );
-
-        //$wgOut->showPermissionsErrorPage('123', null);
     }
+
 }
 
 

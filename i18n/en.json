@@ -1,0 +1,19 @@
+{
+	"@metadata": {
+		"authors": [
+			"Sebastian Schmid"
+		]
+	},
+	"editwarning-desc"       : "Shows a warning message if several users edit the same article at the same time.",
+	"ew-notice-article"      : "Until <strong>$1 $2</strong> other users get the warning that you're editing this article. You can extend this time period by clicking <em>Show preview</em>.<br />$3",
+	"ew-notice-section"      : "Until <strong>$1 $2</strong> other users get the warning that you're editing this section. You can extend this time period by clicking <em>Show preview</em>.<br />$3",
+	"ew-warning-article"     : "User <strong>$1</strong> opened this page for editing on <strong>$2 $3</strong>. You shouldn't make any changes for the next <strong>$4 $5</strong> to avoid edit conflicts.<br />$6",
+	"ew-warning-section"     : "User <strong>$1</strong> opened this section for editing on <strong>$2 $3</strong>. You shouldn't make any changes for the next <strong>$4 $5</strong> to avoid edit conflicts.<br />$6",
+	"ew-warning-sectionedit" : "One or more sections of this article are edited currently. Please edit a specific section or wait <strong>$1 $2</strong> for bigger changes of this article, to avoid edit conflicts.<br />$3",
+	"ew-leave"               : "You can leave this screen by clicking <em>Cancel</em>.",
+	"ew-canceled"            : "Canceled editing.",
+	"ew-minute"              : "minute",
+	"ew-minutes"             : "minutes",
+	"ew-seconds"             : "seconds",
+	"ew-button-cancel"       : "Cancel"
+}

@@ -1,5 +1,7 @@
 <?php
-
+namespace EditWarning;
+//use \EditWarning\InvalidTypeArgumentException;
+use \EditWarning\EditWarningLock;
 /**
  * Implementation of EditWarning class.
  *
@@ -28,8 +30,6 @@
  * @package     EditWarning
  */
 
-require_once( "EditWarningLock.class.php" );
-
 /**
  * getTimestamp: Return a timestamp with x minutes in the future.
  */
@@ -39,9 +39,9 @@ define("TIMESTAMP_NEW", 1);
  */
 define("TIMESTAMP_EXPIRED", 2);
 
-class InvalidTypeArgumentException extends Exception {
+/*class InvalidTypeArgumentException extends Exception {
 
-}
+}*/
 
 class EditWarning {
     /**
@@ -130,14 +130,9 @@ class EditWarning {
      * @return int Unix timestamp.
      */
     public function getTimestamp( $type ) {
-        global $EditWarning_Timeout;
+        global $wgEditWarning_Timeout;
 
-        // Default timeout is 10 minutes.
-        if ( $EditWarning_Timeout <= 0 || $EditWarning_Timeout == "" || $EditWarning_Timeout == null ) {
-            $timeout = 10;
-        } else {
-            $timeout = $EditWarning_Timeout;
-        }
+        $timeout = $wgEditWarning_Timeout;
 
         switch ( $type ) {
             case TIMESTAMP_NEW:
@@ -146,8 +141,9 @@ class EditWarning {
             case TIMESTAMP_EXPIRED:
                 return mktime( date("H"), date("i") - $timeout, date("s"), date("m"), date("d"), date("Y") );
                 break;
-            default:
-                throw new InvalidTypeArgumentException( "Invalid argument for type. Use TIMESTAMP_NEW or TIMESTAMP_EXPIRED constant.");
+			default:
+            	// TODO
+                //throw new InvalidTypeArgumentException( "Invalid argument for type. Use TIMESTAMP_NEW or TIMESTAMP_EXPIRED constant.");
         }
     }
 

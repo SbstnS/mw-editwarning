@@ -8,6 +8,12 @@ Notice: I've written this extension for a MediaWiki installation I've
         features. Even bugfixes may take some time. Please be patient
         or send me a patch.
 
+==== 1.0 (2020-07-15) ===
+ * Add Fixes for MW >= 1.30 (https://www.mediawiki.org/wiki/Extension_talk:EditWarning#2018)
+ * Major rewirte to new PHP 7 standards
+ * Implement new registration mechanism
+ * Implement Overlay
+
 ==== 0.4 (2011-10-28) ====
  * Portuguese translation by Paulo de Souza Lima
  * Updated the article_edit.css for the new MediaWiki layout.
