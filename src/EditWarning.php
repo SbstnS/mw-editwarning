@@ -2,6 +2,8 @@
 namespace EditWarning;
 //use \EditWarning\InvalidTypeArgumentException;
 use \EditWarning\EditWarningLock;
+use Psr\Log\InvalidArgumentException;
+
 /**
  * Implementation of EditWarning class.
  *
@@ -142,8 +144,7 @@ class EditWarning {
                 return mktime( date("H"), date("i") - $timeout, date("s"), date("m"), date("d"), date("Y") );
                 break;
 			default:
-            	// TODO
-                //throw new InvalidTypeArgumentException( "Invalid argument for type. Use TIMESTAMP_NEW or TIMESTAMP_EXPIRED constant.");
+				throw new \InvalidArgumentException("Invalid argument for type. Use TIMESTAMP_NEW or TIMESTAMP_EXPIRED constant.");
         }
     }
 

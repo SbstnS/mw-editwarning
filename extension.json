@@ -54,7 +54,6 @@
 		}
 	},
 	"config": {
-		"EditWarning_OnlyEditor": true,
 		"EditWarning_Timeout":  10
 	},
 	"manifest_version": 1

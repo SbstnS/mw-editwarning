@@ -1,6 +1,7 @@
 <?php
 namespace EditWarning;
 use SMW\MediaWiki\PermissionManager;
+use Exception;
 
 /**
  * Implementation of EditWarningMessage class.
@@ -30,17 +31,7 @@ use SMW\MediaWiki\PermissionManager;
  * @package     EditWarning
  */
 
-/**
- * Error classes for EditWarningMessage
- */
 
-// TODO
-/*class LoadTemplateException extends Exception {
-
-}
-class NoTemplateContentFoundException extends Exception {
-
-}*/
 
 abstract class EditWarningMessage {
     private $_content;
@@ -75,9 +66,7 @@ abstract class EditWarningMessage {
             $file = fopen( $file_name, "r" );
             $this->setContent( fread( $file, filesize( $file_name ) ) );
         } catch( Exception $e ) {
-
-        	// TODO
-            //throw new LoadTemplateException( $e );
+            throw new Exception( $e );
         }
         fclose( $file );
     }
@@ -91,10 +80,7 @@ abstract class EditWarningMessage {
         $content = $this->getContent();
 
         if ( $content == null ) {
-        	//TODO
-            /*throw new NoTemplateContentFoundException(
-                "No template content found. You should load a template first."
-            );*/
+			throw new Exception( "No template content found. You should load a template first." );
         }
 
         foreach( $this->getLabels() as $label => $value ) {
