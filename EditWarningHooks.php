@@ -139,13 +139,6 @@ EOT;
 		$ew = new EditWarning();
 
 		$request = $out->getRequest();
-		// Add CSS styles to header
-		if ( ( $request->getVal( 'action' ) == 'edit' || $request->getVal( 'action' ) == 'formedit' || $request->getVal( 'veaction' ) == 'edit' || $request->getVal( 'action' ) == 'submit' ) &&
-			$wgEditWarning_OnlyEditor &&
-			$user->getID()
-			>= 1	) {
-			$out->addHeadItem( 'edit_css', '  <link href="' . $wgScriptPath . '/extensions/EditWarning/resources/css/article_edit.css" rel="stylesheet" type="text/css" />' );
-		}
 
 		$out->addModules(['ext.editwarning']);
 

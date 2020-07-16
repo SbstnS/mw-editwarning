@@ -46,8 +46,3 @@ wfLoadExtension("EditWarning");
               (Note: The value is the number of minutes):
 
 $EditWarning_Timeout = 5;
-
-Optional: The extension hides everything except the editor area. If you don't
-like this behavior, add this line to your LocalSettings.php:
-
-$EditWarning_OnlyEditor = false;
