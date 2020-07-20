@@ -3,7 +3,7 @@ namespace EditWarning;
 
 use \EditWarning\EditWarning;
 use \EditWarning\EditWarningMsg;
-use OutputPage, Skin;
+use OutputPage, Skin, DatabaseUpdater;
 
 class EditWarningHooks {
 
@@ -329,6 +329,14 @@ EOT;
 				$hook->removeWarning( $ew, $out->getWikiPage(), $user );
 			}
 		}
+
+		return true;
+	}
+
+	public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ) {
+		$dir = $GLOBALS['wgExtensionDirectory'] . '/EditWarning/sql/';
+
+		$updater->addExtensionTable( 'editwarning_locks', $dir . 'editwarning_locks.sql' );
 
 		return true;
 	}

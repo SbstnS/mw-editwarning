@@ -27,6 +27,9 @@
 		],
 		"UserLogout": [
 			"EditWarning\\EditWarningHooks::logout"
+		],
+		"LoadExtensionSchemaUpdates" : [
+			"EditWarning\\EditWarningHooks::onLoadExtensionSchemaUpdates"
 		]
 	},
 	"MessagesDirs": {
