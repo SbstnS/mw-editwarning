@@ -150,7 +150,7 @@ EOT;
 			}
 
 			if ( !defined( 'EDITWARNING_UNITTEST' ) ) {
-				$dbr = wfGetDB( DB_SLAVE );
+				$dbr = wfGetDB( DB_REPLICA );
 				$dbw = wfGetDB( DB_MASTER );
 			}
 
