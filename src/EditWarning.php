@@ -416,6 +416,7 @@ class EditWarning {
 
     /**
      * Saves a new lock into the database.
+	 * !!! "page_props" is not an alternative as it requires the Parser that is not available in hook BeforePageDisplay
      *
      * @access public
      * @param object $dbw MediaWiki write connection object.
