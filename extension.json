@@ -57,7 +57,8 @@
 		}
 	},
 	"config": {
-		"EditWarning_Timeout":  10
+		"EditWarning_Timeout":  10,
+		"EditWarning_ShowInfoBox": false
 	},
 	"manifest_version": 1
 }

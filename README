@@ -33,4 +33,11 @@ php maintenance/update.php
               this setting, add this line to your LocalSettings.php
               (Note: The value is the number of minutes):
 
-$EditWarning_Timeout = 5;
+$wgEditWarning_Timeout = 5;
+
+5.) Configuration
+| Option | Default | Description |
+| --- | --- | --- |
+| $wgEditWarning_ShowInfoBox | false | Displays a info box for the first editor. |
+| $wgEditWarning_Timeout | 10 | How long should a warning box be displayed |
+

@@ -60,14 +60,18 @@ EOT;
 	 * @param int $msgtype Type of edit (article or section).
 	 */
 	private function showInfoMsg( $msgtype, $timestamp, $cancel_url ) {
-		$type = ( $msgtype == TYPE_ARTICLE ) ? "ArticleNotice" : "SectionNotice";
+		global $wgEditWarning_ShowInfoBox;
 
-		// Show info message with updated timestamp.
-		$msg_params[] = date( "Y-m-d", $timestamp );
-		$msg_params[] = date( "H:i", $timestamp );
-		$msg = EditWarningMsg::getInstance( $type, $cancel_url, $msg_params );
-		$msg->show( $msgtype );
-		unset( $msg );
+		if($wgEditWarning_ShowInfoBox){
+			$type = ( $msgtype == TYPE_ARTICLE ) ? "ArticleNotice" : "SectionNotice";
+
+			// Show info message with updated timestamp.
+			$msg_params[] = date( "Y-m-d", $timestamp );
+			$msg_params[] = date( "H:i", $timestamp );
+			$msg = EditWarningMsg::getInstance( $type, $cancel_url, $msg_params );
+			$msg->show( $msgtype );
+			unset( $msg );
+		}
 	}
 
 	/**
