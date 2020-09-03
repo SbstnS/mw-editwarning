@@ -19,7 +19,11 @@
 		"EditWarning\\EditWarningMsg": "src/EditWarningMsg.php",
 		"EditWarning\\EditWarningMsgFactory": "src/EditWarningMsgFactory.php",
 		"EditWarning\\EditWarningWarnMsg": "src/EditWarningWarnMsg.php",
+		"EditWarning\\EditWarningApi": "src/EditWarningApi.php",
 		"EditWarning\\EditWarningHooks": "EditWarningHooks.php"
+	},
+	"APIModules": {
+		"editwarning": "EditWarning\\EditWarningApi"
 	},
 	"Hooks": {
 		"BeforePageDisplay": [
@@ -39,7 +43,7 @@
 	},
 	"ResourceFileModulePaths": {
 		"localBasePath": "resources",
-		"remoteExtPath": "EditWarning"
+		"remoteExtPath": "EditWarning/resources"
 	},
 	"ResourceModules": {
 		"ext.editwarning": {

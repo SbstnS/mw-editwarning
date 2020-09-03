@@ -134,6 +134,8 @@ EOT;
 	public static function edit( OutputPage $out, Skin $skin ) {
 		global $wgScriptPath, $request, $wgEditWarning_OnlyEditor, $PHP_SELF;
 
+		$out->addModules('ext.editwarning');
+
 		$dbr = null;
 		$dbw = null;
 
@@ -144,9 +146,7 @@ EOT;
 
 		$request = $out->getRequest();
 
-		$out->addModules(['ext.editwarning']);
-
-		if ( $_REQUEST['action'] === 'edit' || $_REQUEST['action'] === 'formedit' || $_REQUEST['veaction'] === 'edit' ) {
+		if ( $request->getVal('action') === 'edit' || $request->getVal('action') === 'formedit' || $request->getVal('veaction') === 'edit' ) {
 
 			// Abort on nonexisting pages
 			if ( $out->getTitle()->getArticleID() < 1 ) {
@@ -329,7 +329,7 @@ EOT;
 		} else {
 			// Action if saved or aborted.
 			// !!! This actions is called on each page load except edit actions
-			if($out->getTitle()->getNamespace() > -1){
+			if( $out->getTitle()->getNamespace() > -1 ) {
 				$hook->removeWarning( $ew, $out->getWikiPage(), $user );
 			}
 		}
@@ -340,7 +340,8 @@ EOT;
 	public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ) {
 		$dir = $GLOBALS['wgExtensionDirectory'] . '/EditWarning/sql/';
 
-		$updater->addExtensionTable( 'editwarning_locks', $dir . 'editwarning_locks.sql' );
+		$updater->addExtensionTable( 'editwarning_locks', $dir . 'editwarning_locks_create.sql' );
+		$updater->addExtensionTable( 'editwarning_locks', $dir . 'editwarning_locks_alter.sql' );
 
 		return true;
 	}

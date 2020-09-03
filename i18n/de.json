@@ -15,5 +15,15 @@
 	"ew-minute"              : "Minute",
 	"ew-minutes"             : "Minuten",
 	"ew-seconds"             : "Sekunden",
-	"ew-button-cancel"       : "Abbrechen"
+	"ew-button-cancel"       : "Abbrechen",
+	"apihelp-editwarning-example-1": "Löscht den Lock-Eintrag des Benutzers 'Admin' mit der Artikelnummer 1 (Main_Page)",
+	"apihelp-editwarning-example-2": "Setzen Sie einen Lock-Eintrag für den Benutzer 'Admin' mit der Artikelnummer 56 (Person:Sebastian_Schmid)",
+	"apihelp-editwarning-example-3": "Löscht den Lock-Eintrag von Section 3 des Benutzers 'Admin' mit der Artikelnummer 1 (Main_Page)",
+	"apihelp-editwarning-example-4": "Setzen Sie einen Lock-Eintrag für Section 3 des Benutzers 'Admin' mit der Artikelnummer 56 (Person:Sebastian_Schmid)",
+	"apihelp-editwarning-summary": "Löschen oder Hinzufügen von Artikeln/Abschnitten eines Benutzers zur EditWarning-Lock-Tabelle auf der Grundlage der Artikel-ID",
+	"apihelp-editwarnung-apiparam-ewaction": "'lock' wird einen Eintrag hinzufügen. 'unlock' entfernt einen Eintrag",
+	"apihelp-editwarning-apiparam-articleid": "Artikel-ID der Seite, die Sie sperren möchten. (z.B. 56)",
+	"apihelp-editwarnung-apiparam-section": "Section-ID des Artikels, den Sie sperren möchten. (z.B. 3)",
+	"apihelp-editwarnung-apiparam-user": "Gültiger Benutzer, auf den sich der Sperreintrag bezieht (z.B. Admin)"
+
 }
