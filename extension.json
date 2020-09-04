@@ -62,7 +62,12 @@
 	},
 	"config": {
 		"EditWarning_Timeout":  10,
-		"EditWarning_ShowInfoBox": false
+		"EditWarning_ShowInfoBox": false,
+		"TS_Timeout": 1,
+		"TS_Current": 2,
+		"Type_Article": 1,
+		"Type_Article_Section_Conflict": 2,
+		"Type_Section": 3
 	},
 	"manifest_version": 1
 }

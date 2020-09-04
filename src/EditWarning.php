@@ -32,18 +32,6 @@ use Psr\Log\InvalidArgumentException;
  * @package     EditWarning
  */
 
-/**
- * getTimestamp: Return a timestamp with x minutes in the future.
- */
-define("TIMESTAMP_NEW", 1);
-/**
- * getTimestamp: Return a timestamp with x minutes in the past.
- */
-define("TIMESTAMP_EXPIRED", 2);
-
-/*class InvalidTypeArgumentException extends Exception {
-
-}*/
 
 class EditWarning {
     /**
@@ -110,9 +98,10 @@ class EditWarning {
      * @param object $dbr Database connection object.
      */
     public function load( $dbr ) {
+		global $wgTS_Current;
         // Build conditions for select operation.
         $conditions  = sprintf( "`article_id` = '%s'", $this->getArticleID() );
-        $conditions .= sprintf( " AND `timestamp` >= '%s'", $this->getTimestamp( TIMESTAMP_EXPIRED ) );
+        $conditions .= sprintf( " AND `timestamp` >= '%s'", $this->getTimestamp( $wgTS_Current ) );
         $result = $dbr->select( "editwarning_locks", "*", $conditions );
 
         // Create lock objects for every valid lock.
@@ -132,16 +121,16 @@ class EditWarning {
      * @return int Unix timestamp.
      */
     public function getTimestamp( $type ) {
-        global $wgEditWarning_Timeout;
+        global $wgEditWarning_Timeout, $wgTS_Timeout, $wgTS_Current;
 
         $timeout = $wgEditWarning_Timeout;
 
         switch ( $type ) {
-            case TIMESTAMP_NEW:
+            case $wgTS_Timeout: 
                 return mktime( date("H"), date("i") + $timeout, date("s"), date("m"), date("d"), date("Y") );
                 break;
-            case TIMESTAMP_EXPIRED:
-                return mktime( date("H"), date("i") - $timeout, date("s"), date("m"), date("d"), date("Y") );
+            case $wgTS_Current:
+                return mktime( date("H"), date("i") , date("s"), date("m"), date("d"), date("Y") );
                 break;
 			default:
 				throw new \InvalidArgumentException("Invalid argument for type. Use TIMESTAMP_NEW or TIMESTAMP_EXPIRED constant.");
@@ -423,11 +412,12 @@ class EditWarning {
      * @param int $section Id of the current section (0 for no section).
      */
     public function saveLock( $dbw, $section = 0 ) {
+		global $wgTS_Timeout;
         $values = array(
             'user_id'    => $this->_user_id,
             'user_name'  => $this->_user_name,
             'article_id' => $this->_article_id,
-            'timestamp'  => $this->getTimestamp( TIMESTAMP_NEW ),
+            'timestamp'  => $this->getTimestamp( $wgTS_Timeout ),
             'section'    => $section
         );
         $dbw->insert( "editwarning_locks", $values );
@@ -442,7 +432,8 @@ class EditWarning {
      * @param int $section Id of the current section (0 for no section).
      */
     public function updateLock( $dbw, $section = 0 ) {
-        $value      = array( "timestamp" => $this->getTimestamp( TIMESTAMP_NEW ) );
+		global $wgTS_Timeout;
+        $value      = array( "timestamp" => $this->getTimestamp( $wgTS_Timeout ) );
         $conditions = array(
             'user_id'    => $this->_user_id,
             'article_id' => $this->_article_id,

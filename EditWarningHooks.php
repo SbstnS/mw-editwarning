@@ -23,12 +23,6 @@ EOT;
 			exit( 1 );
 		}
 
-
-		// Used for messages to indicate edit type.
-		define( 'TYPE_ARTICLE', 1 );
-		define( 'TYPE_ARTICLE_SECTIONCONFLICT', 2 );
-		define( 'TYPE_SECTION', 3 );
-
 		return true;
 	}
 
@@ -60,10 +54,10 @@ EOT;
 	 * @param int $msgtype Type of edit (article or section).
 	 */
 	private function showInfoMsg( $msgtype, $timestamp, $cancel_url ) {
-		global $wgEditWarning_ShowInfoBox;
+		global $wgEditWarning_ShowInfoBox, $wgType_Article;
 
 		if($wgEditWarning_ShowInfoBox){
-			$type = ( $msgtype == TYPE_ARTICLE ) ? "ArticleNotice" : "SectionNotice";
+			$type = ( $msgtype == $wgType_Article ) ? "ArticleNotice" : "SectionNotice";
 
 			// Show info message with updated timestamp.
 			$msg_params[] = date( "Y-m-d", $timestamp );
@@ -81,14 +75,15 @@ EOT;
 	 * @param <type> $lockobj EditWarningLock object.
 	 */
 	private function showWarningMsg( $msgtype, $lockobj, $cancel_url ) {
+		global $wgType_Article, $wgType_Article_Section_Conflict, $wgType_Section;
 		switch ( $msgtype ) {
-			case TYPE_ARTICLE:
+			case $wgType_Article:
 				$type = "ArticleWarning";
 				break;
-			case TYPE_ARTICLE_SECTIONCONFLICT:
+			case $wgType_Article_Section_Conflict:
 				$type = "ArticleSectionWarning";
 				break;
-			case TYPE_SECTION:
+			case $wgType_Section:
 				$type = "SectionWarning";
 				break;
 		}
@@ -99,20 +94,17 @@ EOT;
 
 
 		// Parameters for message string
-		if ( $msgtype == TYPE_ARTICLE || $msgtype == TYPE_SECTION ) {
+		if ( $msgtype == $wgType_Article || $msgtype == $wgType_Section ) {
 			$msg_params[] = $lockobj->getUserName();
 			$msg_params[] = date( "Y-m-d", $lockobj->getTimestamp() );
 			$msg_params[] = date( "H:i", $lockobj->getTimestamp() );
 		}
 
-		$msg_params[] = $time_to_wait;
+		$msg_params[] = $time_to_wait + 1;
 
 		// Use minutes or seconds string?
-		if ( $time_to_wait > 1 || $difference > 60 ) {
-			$msg_params[] = wfMessage( 'ew-minutes' )->text();
-		} else {
-			$msg_params[] = wfMessage( 'ew-seconds' )->text();
-		}
+		$msg_params[] = wfMessage( 'ew-minutes' )->text();
+
 
 		$msg = EditWarningMsg::getInstance( $type, $cancel_url, $msg_params );
 		$msg->show($type);
@@ -132,7 +124,9 @@ EOT;
 	 */
 
 	public static function edit( OutputPage $out, Skin $skin ) {
-		global $wgScriptPath, $request, $wgEditWarning_OnlyEditor, $PHP_SELF;
+		global $wgScriptPath, $request, $wgEditWarning_OnlyEditor, $PHP_SELF ,
+			   $wgTS_Current, $wgTS_Timeout,
+			   $wgType_Article, $wgType_Article_Section_Conflict, $wgType_Section;
 
 		$out->addModules('ext.editwarning');
 
@@ -192,7 +186,7 @@ EOT;
 
 						$ew->removeLock( $dbw );
 						$ew->saveLock( $dbw, $section );
-						$hook->showInfoMsg( TYPE_SECTION, $ew->getTimestamp( TIMESTAMP_NEW ), $url );
+						$hook->showInfoMsg( $wgType_Section, $ew->getTimestamp( $wgTS_Timeout ), $url );
 						unset( $ew );
 
 						return true;
@@ -202,7 +196,7 @@ EOT;
 							return EDIT_ARTICLE_OTHER;
 						}
 
-						$hook->showWarningMsg( TYPE_ARTICLE, $ew->getArticleLock(), $url );
+						$hook->showWarningMsg( $wgType_Article, $ew->getArticleLock(), $url );
 						unset( $ew );
 
 						return true;
@@ -218,7 +212,7 @@ EOT;
 						}
 
 						$ew->updateLock( $dbw, $section );
-						$hook->showInfoMsg( TYPE_SECTION, $ew->getTimestamp( TIMESTAMP_NEW ), $url );
+						$hook->showInfoMsg( $wgType_Section, $ew->getTimestamp( $wgTS_Timeout ), $url );
 						unset( $ew );
 
 						return true;
@@ -228,7 +222,7 @@ EOT;
 							return EDIT_SECTION_OTHER;
 						}
 
-						$hook->showWarningMsg( TYPE_SECTION, $sectionLock, $url );
+						$hook->showWarningMsg( $wgType_Section, $sectionLock, $url );
 						unset( $ew );
 
 						return true;
@@ -245,7 +239,7 @@ EOT;
 					}
 
 					$ew->saveLock( $dbw, $section );
-					$hook->showInfoMsg( TYPE_SECTION, $ew->getTimestamp( TIMESTAMP_NEW ), $url );
+					$hook->showInfoMsg( $wgType_Section, $ew->getTimestamp( $wgTS_Timeout ), $url );
 					unset( $ew );
 
 					return true;
@@ -263,7 +257,7 @@ EOT;
 						}
 
 						$ew->updateLock( $dbw );
-						$hook->showInfoMsg( TYPE_ARTICLE, $ew->getTimestamp( TIMESTAMP_NEW ), $url );
+						$hook->showInfoMsg( $wgType_Article, $ew->getTimestamp( $wgTS_Timeout ), $url );
 						unset( $ew );
 
 						return true;
@@ -274,7 +268,7 @@ EOT;
 						}
 
 						$article_lock = $ew->getArticleLock();
-						$hook->showWarningMsg( TYPE_ARTICLE, $article_lock, $url );
+						$hook->showWarningMsg( $wgType_Article, $article_lock, $url );
 						unset( $ew );
 
 						return true;
@@ -291,7 +285,7 @@ EOT;
 						$sectionLocks = $ew->getSectionLocksByOther();
 						// Get the newest lock of a section for the warning message.
 						$lock = $sectionLocks[$ew->getSectionLocksByOtherCount() - 1];
-						$hook->showWarningMsg( TYPE_ARTICLE_SECTIONCONFLICT, $lock, $url );
+						$hook->showWarningMsg( $wgType_Article_Section_Conflict, $lock, $url );
 						unset( $ew );
 
 						return true;
@@ -305,7 +299,7 @@ EOT;
 
 						$ew->removeUserLocks( $dbw );
 						$ew->saveLock( $dbw );
-						$hook->showInfoMsg( TYPE_ARTICLE, $ew->getTimestamp( TIMESTAMP_NEW ), $url );
+						$hook->showInfoMsg( $wgType_Article, $ew->getTimestamp( $wgTS_Timeout ), $url );
 						unset( $ew );
 
 						return true;
@@ -322,7 +316,7 @@ EOT;
 					}
 
 					$ew->saveLock( $dbw );
-					$hook->showInfoMsg( TYPE_ARTICLE, $ew->getTimestamp( TIMESTAMP_NEW ), $url );
+					$hook->showInfoMsg( $wgType_Article, $ew->getTimestamp( $wgTS_Timeout ), $url );
 					unset( $ew );
 				}
 			}
