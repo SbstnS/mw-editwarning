@@ -1,43 +1,34 @@
-================================================
- MediaWiki Extension: EditWarning
-================================================
+# EditWarning
+The EditWarning extension displays a warning if user edits a page/section which is currently being edited.
 
-Authors: Thomas David (nemphis@code-geek.de), Sebastian Schmid (gesinn.it GmbH)
-Version: 1.0
-Date: 2020-07-21
-Licence: GNU GPL 2.0 or later
+On pages which are being edited by many users simultaneously, edit conflicts can easily happen. This extension tries to avoid this problem by showing a warning message if the user edits a page that is being edited by other users at the same time. 
 
-If the user opens a page for editing which is being edited by another user
-at the same time this extension displays a warning on the editing page.
+Supported editing modes:
+* Source edititing
+* Editing via Page Forms
+* Editing via VisualEditor 
 
-Notice: It's not recommended to use this extension if anonymous users
-are allowed to edit pages, because it ignores anonymous page edits.
+This extension was inspired by https://github.com/nemphis/mw-editwarning/ which has not been maintained for a long time. 
 
-If you want to improve or extend this extension, fork it at github:
-https://github.com/nemphis/mw-editwarning
+## Installation
+Download and place the file(s) in a directory called RegexFunctions in your extensions/ folder.
 
-===== Installation =====
+Add the following code at the bottom of your LocalSettings.php:
 
-1.) Move the folder "EditWarning" to the "extensions" folder of your
-    MediaWiki installation.
+ wfLoadExtension("EditWarning");
 
-2.) Add this line to your LocalSettings.php:
+Run the "update.php" script from the base directory of your MediaWiki installation:
 
-wfLoadExtension("EditWarning");
+ php maintenance/update.php
 
-3.) Run the "update.php" script from the base directory of your MediaWiki installation:
+Done – Navigate to Special:Version on your wiki to verify that the extension is successfully installed.
 
-php maintenance/update.php
+## Known Issues
+The extension can only recognize the cancel of page editing if the user uses the "Cancel" button. Otherwise the warning will be showed until the timeout (default 10 minutes).
 
-4.) Optional: The default timeout is set to 10 minutes. If you want to change
-              this setting, add this line to your LocalSettings.php
-              (Note: The value is the number of minutes):
-
-$wgEditWarning_Timeout = 5;
-
-5.) Configuration
-| Option | Default | Description |
-| --- | --- | --- |
-| $wgEditWarning_ShowInfoBox | false | Displays a info box for the first editor. |
-| $wgEditWarning_Timeout | 10 | How long should a warning box be displayed |
+## Configuration
+Option | Default | Description |
+--- | --- | --- |
+$wgEditWarning_ShowInfoBox | false | Displays a info box for the first editor. |
+$wgEditWarning_Timeout | 10 | How long should a warning box be displayed |
 
